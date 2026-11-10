@@ -1,0 +1,53 @@
+server:
+  port: 8003
+
+spring:
+  application:
+    name: ai-bridge-server
+
+logging:
+  level:
+    org.example: INFO
+
+app:
+  # true: 只做“收到语音 -> 回预置音频”，不调用 STT/LLM/TTS，先验证设备链路
+  mock: false
+  # 留空时自动使用设备请求里的 Host；如果 OTA 返回的地址不对，可手动填 192.168.1.100:8003
+  public-host: ""
+  persona: "你叫小Y，是用户熟悉的朋友。说话温柔细腻、口语化、中文，允许根据问题自主回问。"
+
+  vad:
+    silence-ms: 700
+    min-speech-ms: 300
+    max-utterance-ms: 15000
+    energy-threshold: 500
+
+  stt:
+    # vosk（本地离线） / mock（固定文本）
+    provider: vosk
+    model-path: ./models/vosk-model-cn-0.22
+    mock-text: "你好呀，今天过得怎么样？"
+
+  llm:
+    base-url: https://api.deepseek.com
+    # 不要把真实 Key 写进仓库：用环境变量 DEEPSEEK_API_KEY，
+    # 或在本文件同目录建 application-local.yml 里覆盖（已加入 .gitignore）。
+    api-key: ${DEEPSEEK_API_KEY:}
+    model: deepseek-chat
+    timeout-seconds: 30
+
+  tts:
+    # edge：微软 Edge 在线 neural 语音（自然，需要联网）
+    # sapi：Windows 自带离线语音（机械）
+    provider: edge
+    # sapi 用
+    voice: "Microsoft Huihui Desktop"
+    rate: 0
+    # edge 用；可选音色见 tools/tts-venv 里 python -m edge_tts --list-voices
+    edge-voice: zh-CN-XiaoxiaoNeural
+    edge-rate: "+0%"
+    edge-volume: "+0%"
+    edge-pitch: "+8Hz"
+    edge-python: tools/tts-venv/Scripts/python.exe
+    edge-script: tools/tts_helper.py
+    preset-audio: "classpath:audio/reply.wav"
